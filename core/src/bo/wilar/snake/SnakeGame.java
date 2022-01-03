@@ -1,5 +1,7 @@
 package bo.wilar.snake;
 
+import bo.wilar.snake.controllers.SnakeController;
+import bo.wilar.snake.enums.SnakeCommand;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -10,26 +12,33 @@ import com.badlogic.gdx.utils.ScreenUtils;
 
 public class SnakeGame extends ApplicationAdapter {
 
-    ShapeRenderer shapeRenderer;
-    Float xAxis;
-    Float yAxis;
+//    ShapeRenderer shapeRenderer;
+//    Float xAxis;
+//    Float yAxis;
+    private SnakeController snakeController;
 
     @Override
     public void create() {
 
-        shapeRenderer = new ShapeRenderer();
-        xAxis = 200f;
-        yAxis = 200f;
+//        shapeRenderer = new ShapeRenderer();
+//        xAxis = 650f;
+//        yAxis = 650f;
+        this.snakeController = new SnakeController();
     }
 
     @Override
     public void render() {
+//        System.out.println("1  " + Gdx.graphics.getWidth());
+//        System.out.println("2  " + Gdx.graphics.getHeight());
+//
         ScreenUtils.clear(0.5f, 0.5f, 0, 1);
         verifyKeys();
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(0.2f, 0.2f, 0.2f, 1);
-        shapeRenderer.rect(xAxis, yAxis, 100, 50);
-        shapeRenderer.end();
+//        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+//        shapeRenderer.setColor(0.2f, 0.2f, 0.2f, 1);
+//        shapeRenderer.rect(xAxis, yAxis, 50, 50);
+//        shapeRenderer.end();
+
+        snakeController.play();
 
 
     }
@@ -42,16 +51,16 @@ public class SnakeGame extends ApplicationAdapter {
 
     private void verifyKeys() {
         if (Gdx.input.isKeyPressed(Input.Keys.W)) {
-            yAxis += 1;
+            snakeController.setSnakeCommand(SnakeCommand.UP);
         }
         if (Gdx.input.isKeyPressed(Input.Keys.S)) {
-            yAxis += -1;
+            snakeController.setSnakeCommand(SnakeCommand.DOWN);
         }
         if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-            xAxis += -1;
+            snakeController.setSnakeCommand(SnakeCommand.LEFT);
         }
         if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-            xAxis += 1;
+            snakeController.setSnakeCommand(SnakeCommand.RIGHT);
         }
 
     }
