@@ -7,21 +7,19 @@ import com.badlogic.gdx.backends.lwjgl.LwjglApplicationConfiguration;
 public class SnakeGameRunner {
 
     private final String title;
-    private final Integer height;
-    private final Integer width;
+    private final Integer resolution;
 
-    public SnakeGameRunner(String title, Integer height, Integer width) {
+    public SnakeGameRunner(String title, Integer resolution) {
         this.title = title;
-        this.height = height;
-        this.width = width;
+        this.resolution = resolution;
     }
 
     public void run() {
         LwjglApplicationConfiguration config = new LwjglApplicationConfiguration();
         config.title = this.title;
-        config.height = this.height;
-        config.width = this.width;
-        new LwjglApplication(new SnakeGame(), config);
+        config.height = this.resolution;
+        config.width = this.resolution;
+        new LwjglApplication(new SnakeGame(this.resolution), config);
     }
 
 }

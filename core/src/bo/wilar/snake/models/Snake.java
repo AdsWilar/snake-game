@@ -2,39 +2,34 @@ package bo.wilar.snake.models;
 
 public class Snake {
 
-    private Float x;
-    private Float y;
-    private final Float height;
-    private final Float width;
+    private final Float size;
+    private SnakePiece head;
+    private SnakePiece tail;
 
-    public Snake(Float x, Float y, Float height, Float width) {
-        this.x = x;
-        this.y = y;
-        this.height = height;
-        this.width = width;
+    public Snake(Float size, SnakePiece head, SnakePiece tail) {
+        this.size = size;
+        this.head = head;
+        this.tail = tail;
     }
 
-    public Float getX() {
-        return x;
+    public Float getSize() {
+        return size;
     }
 
-    public Float getY() {
-        return y;
+    public SnakePiece getHead() {
+        return head;
     }
 
-    public Float getHeight() {
-        return height;
+    public void setHead(SnakePiece head) {
+        this.head = head;
     }
 
-    public Float getWidth() {
-        return width;
+    public SnakePiece getTail() {
+        return tail;
     }
 
-    public void setX(Float x) {
-        this.x = x;
+    public void setTail(SnakePiece tail) {
+        this.tail = tail;
     }
 
-    public void setY(Float y) {
-        this.y = y;
-    }
 }
