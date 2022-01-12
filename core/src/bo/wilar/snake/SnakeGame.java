@@ -38,16 +38,16 @@ public class SnakeGame extends ApplicationAdapter {
     }
 
     private void verifyKeys() {
-        if (Gdx.input.isKeyPressed(Input.Keys.W)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.W)) {
             stageController.changeDirection(SnakeDirection.UP);
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.S)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.S)) {
             stageController.changeDirection(SnakeDirection.DOWN);
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.A)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.A)) {
             stageController.changeDirection(SnakeDirection.LEFT);
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.D)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.D)) {
             stageController.changeDirection(SnakeDirection.RIGHT);
         }
     }

@@ -71,8 +71,8 @@ public class StageController {
 
     private Coordinate getCoordinateByRowAndColumn(Integer row, Integer column) {
         Float snakeSize = this.snake.getSize();
-        Float abscissa = this.resolution - (this.resolution - (row * snakeSize) - snakeSize);
-        Float ordinate = this.resolution - (column * snakeSize) - snakeSize;
+        Float abscissa = column * snakeSize;
+        Float ordinate = (this.resolution - snakeSize) - (row * snakeSize);
         return new Coordinate(abscissa, ordinate);
     }
 
@@ -81,11 +81,11 @@ public class StageController {
         snakeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         Float snakeSize = this.snake.getSize();
         snakeRenderer.setColor(0.2f, 0.2f, 0.2f, 1);
-        Coordinate snakeHeadCoordinate = this.snake.getHead().getCoordinate();
-        snakeRenderer.rect(snakeHeadCoordinate.getAbscissa(), snakeHeadCoordinate.getOrdinate(), snakeSize, snakeSize);
-        Coordinate snakeTailCoordinate = this.snake.getTail().getCoordinate();
-        snakeRenderer.rect(snakeTailCoordinate.getAbscissa(), snakeTailCoordinate.getOrdinate(), snakeSize, snakeSize);
-      //  drawSnake();
+//        Coordinate snakeHeadCoordinate = this.snake.getHead().getCoordinate();
+//        snakeRenderer.rect(snakeHeadCoordinate.getAbscissa(), snakeHeadCoordinate.getOrdinate(), snakeSize, snakeSize);
+//        Coordinate snakeTailCoordinate = this.snake.getTail().getCoordinate();
+//        snakeRenderer.rect(snakeTailCoordinate.getAbscissa(), snakeTailCoordinate.getOrdinate(), snakeSize, snakeSize);
+        drawSnake();
         snakeRenderer.end();
 
         foodRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -170,6 +170,15 @@ public class StageController {
 
     public void changeDirection(SnakeDirection newDirection) {
         SnakePiece head = this.snake.getHead();
+        SnakeDirection currentDirection = head.getCurrentDirection();
+        if ((currentDirection.equals(newDirection)) ||
+                (currentDirection.equals(SnakeDirection.UP) && newDirection.equals(SnakeDirection.DOWN)) ||
+                (currentDirection.equals(SnakeDirection.DOWN) && newDirection.equals(SnakeDirection.UP)) ||
+                (currentDirection.equals(SnakeDirection.RIGHT) && newDirection.equals(SnakeDirection.LEFT)) ||
+                (currentDirection.equals(SnakeDirection.LEFT) && newDirection.equals(SnakeDirection.RIGHT))) {
+            return;
+        }
+
         head.setCurrentDirection(newDirection);
         Position headPosition = head.getPosition();
         this.directionChanges.add(new DirectionChange(
