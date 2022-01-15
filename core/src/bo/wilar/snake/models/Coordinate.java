@@ -14,16 +14,10 @@ public class Coordinate {
         return abscissa;
     }
 
-    public void setAbscissa(Float abscissa) {
-        this.abscissa = abscissa;
-    }
 
     public Float getOrdinate() {
         return ordinate;
     }
 
-    public void setOrdinate(Float ordinate) {
-        this.ordinate = ordinate;
-    }
 
 }

@@ -7,26 +7,29 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 import java.util.*;
 
-public class StageController {
+public class SnakeController {
 
     private final Integer resolution;
-    private final Snake snake;
+    private Snake snake;
     private Position food;
     private Integer levelIndex;
     private Level currentLevel;
     private Integer foodsAmount;
-    private final ShapeRenderer snakeRenderer;
-    private final ShapeRenderer foodRenderer;
-    private final ShapeRenderer obstaclesRenderer;
+    private ShapeRenderer snakeRenderer;
+    private ShapeRenderer foodRenderer;
+    private ShapeRenderer obstaclesRenderer;
 
     private final Random random = new Random();
-    private static final Integer LEVELS_AMOUNT = 5;
-    private static final Integer FOOD_REQUIRED_AMOUNT = 5;
+    private static final Integer LEVELS_AMOUNT = 10;
+    private static final Integer FOOD_REQUIRED_AMOUNT = 3;
     private static final Integer DIMENSION = 50;
 
-    public StageController(Integer resolution) {
+    public SnakeController(Integer resolution) {
         this.resolution = resolution;
+        initGame();
+    }
 
+    private void initGame() {
         this.snake = initSnake();
         initFood();
         this.levelIndex = 0;
@@ -179,6 +182,10 @@ public class StageController {
         drawObstacles();
         Thread.sleep(100);
         advanceSnake();
+        if (this.currentLevel.getIndex() > LEVELS_AMOUNT) {
+            initGame();
+            throw new CollisionException("Ya pasó todos los niveles.");
+        }
     }
 
     private void drawSnake() {
@@ -265,7 +272,56 @@ public class StageController {
         Integer newHeadPositionColumn = newHeadPosition.getColumnIndex();
         if (newHeadPositionRow < 0 || newHeadPositionRow >= DIMENSION ||
                 newHeadPositionColumn < 0 || newHeadPositionColumn >= DIMENSION) {
-            throw new CollisionException("La serpiente se estrelló contra el muro.");
+            Integer halfDimension = DIMENSION / 2;
+            switch (this.snake.getHead().getCurrentDirection()) {
+                case UP:
+                    SnakeDirection newDirectionUp;
+                    newHeadPosition.setRowIndex(newHeadPositionRow + 1);
+                    if (newHeadPositionColumn < halfDimension) {
+                        newDirectionUp = SnakeDirection.RIGHT;
+                        newHeadPosition.setColumnIndex(newHeadPositionColumn + 1);
+                    } else {
+                        newDirectionUp = SnakeDirection.LEFT;
+                        newHeadPosition.setColumnIndex(newHeadPositionColumn - 1);
+                    }
+                    this.snake.getHead().setCurrentDirection(newDirectionUp);
+                    break;
+                case DOWN:
+                    SnakeDirection newDirectionDown;
+                    newHeadPosition.setRowIndex(newHeadPositionRow - 1);
+                    if (newHeadPositionColumn < halfDimension) {
+                        newDirectionDown = SnakeDirection.RIGHT;
+                        newHeadPosition.setColumnIndex(newHeadPositionColumn + 1);
+                    } else {
+                        newDirectionDown = SnakeDirection.LEFT;
+                        newHeadPosition.setColumnIndex(newHeadPositionColumn - 1);
+                    }
+                    this.snake.getHead().setCurrentDirection(newDirectionDown);
+                    break;
+                case RIGHT:
+                    SnakeDirection newDirectionRight;
+                    if (newHeadPositionRow < halfDimension) {
+                        newDirectionRight = SnakeDirection.DOWN;
+                        newHeadPosition.setRowIndex(newHeadPositionRow + 1);
+                    } else {
+                        newDirectionRight = SnakeDirection.UP;
+                        newHeadPosition.setRowIndex(newHeadPositionRow - 1);
+                    }
+                    newHeadPosition.setColumnIndex(newHeadPositionColumn - 1);
+                    this.snake.getHead().setCurrentDirection(newDirectionRight);
+                    break;
+                default:
+                    SnakeDirection newDirectionLeft;
+                    if (newHeadPositionRow < halfDimension) {
+                        newDirectionLeft = SnakeDirection.DOWN;
+                        newHeadPosition.setRowIndex(newHeadPositionRow + 1);
+                    } else {
+                        newDirectionLeft = SnakeDirection.UP;
+                        newHeadPosition.setRowIndex(newHeadPositionRow - 1);
+                    }
+                    newHeadPosition.setColumnIndex(newHeadPositionColumn + 1);
+                    this.snake.getHead().setCurrentDirection(newDirectionLeft);
+            }
         }
         for (Position bodyPosition : this.snake.getBody()) {
             if (newHeadPositionRow.equals(bodyPosition.getRowIndex()) &&

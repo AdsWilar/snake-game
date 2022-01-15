@@ -18,11 +18,12 @@ public class Level {
         return foodRequiredAmount;
     }
 
+    public Integer getIndex() {
+        return index;
+    }
+
     public List<Obstacle> getObstacles() {
         return obstacles;
     }
 
-    public Integer getIndex() {
-        return index;
-    }
 }

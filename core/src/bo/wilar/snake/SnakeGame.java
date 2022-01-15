@@ -1,6 +1,6 @@
 package bo.wilar.snake;
 
-import bo.wilar.snake.controllers.StageController;
+import bo.wilar.snake.controllers.SnakeController;
 import bo.wilar.snake.enums.SnakeDirection;
 import bo.wilar.snake.exceptions.CollisionException;
 import com.badlogic.gdx.ApplicationAdapter;
@@ -11,7 +11,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 public class SnakeGame extends ApplicationAdapter {
 
     private final Integer resolution;
-    private StageController stageController;
+    private SnakeController snakeController;
 
     public SnakeGame(Integer resolution) {
         this.resolution = resolution;
@@ -19,7 +19,7 @@ public class SnakeGame extends ApplicationAdapter {
 
     @Override
     public void create() {
-        this.stageController = new StageController(this.resolution);
+        this.snakeController = new SnakeController(this.resolution);
     }
 
     @Override
@@ -27,7 +27,7 @@ public class SnakeGame extends ApplicationAdapter {
         ScreenUtils.clear(0.5f, 0.5f, 0, 1);
         verifyKeys();
         try {
-            stageController.play();
+            snakeController.play();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (CollisionException e) {
@@ -43,16 +43,16 @@ public class SnakeGame extends ApplicationAdapter {
 
     private void verifyKeys() {
         if (Gdx.input.isKeyJustPressed(Input.Keys.W)) {
-            stageController.changeDirection(SnakeDirection.UP);
+            snakeController.changeDirection(SnakeDirection.UP);
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.S)) {
-            stageController.changeDirection(SnakeDirection.DOWN);
+            snakeController.changeDirection(SnakeDirection.DOWN);
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.A)) {
-            stageController.changeDirection(SnakeDirection.LEFT);
+            snakeController.changeDirection(SnakeDirection.LEFT);
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.D)) {
-            stageController.changeDirection(SnakeDirection.RIGHT);
+            snakeController.changeDirection(SnakeDirection.RIGHT);
         }
     }
 
