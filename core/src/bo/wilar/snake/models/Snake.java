@@ -1,35 +1,29 @@
 package bo.wilar.snake.models;
 
+import java.util.LinkedList;
+
 public class Snake {
 
     private final Float size;
-    private SnakePiece head;
-    private SnakePiece tail;
+    private final SnakeHead head;
+    private final LinkedList<Position> body;
 
-    public Snake(Float size, SnakePiece head, SnakePiece tail) {
+    public Snake(Float size, SnakeHead head, LinkedList<Position> body) {
         this.size = size;
         this.head = head;
-        this.tail = tail;
+        this.body = body;
     }
 
     public Float getSize() {
         return size;
     }
 
-    public SnakePiece getHead() {
+    public SnakeHead getHead() {
         return head;
     }
 
-    public void setHead(SnakePiece head) {
-        this.head = head;
-    }
-
-    public SnakePiece getTail() {
-        return tail;
-    }
-
-    public void setTail(SnakePiece tail) {
-        this.tail = tail;
+    public LinkedList<Position> getBody() {
+        return body;
     }
 
 }

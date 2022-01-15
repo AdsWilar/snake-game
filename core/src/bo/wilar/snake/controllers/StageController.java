@@ -1,72 +1,169 @@
 package bo.wilar.snake.controllers;
 
 import bo.wilar.snake.enums.SnakeDirection;
+import bo.wilar.snake.exceptions.CollisionException;
 import bo.wilar.snake.models.*;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.Random;
+import java.util.*;
 
 public class StageController {
 
     private final Integer resolution;
-    private final Boolean[][] snakeMatrix;
-    private final Boolean[][] foodMatrix;
     private final Snake snake;
-    private Coordinate foodCoordinate;
+    private Position food;
+    private Integer levelIndex;
+    private Level currentLevel;
+    private Integer foodsAmount;
     private final ShapeRenderer snakeRenderer;
     private final ShapeRenderer foodRenderer;
-    private final LinkedList<DirectionChange> directionChanges;
+    private final ShapeRenderer obstaclesRenderer;
 
+    private final Random random = new Random();
+    private static final Integer LEVELS_AMOUNT = 5;
+    private static final Integer FOOD_REQUIRED_AMOUNT = 5;
+    private static final Integer DIMENSION = 50;
 
     public StageController(Integer resolution) {
         this.resolution = resolution;
-        Integer dimension = 50;
-        this.snakeMatrix = new Boolean[dimension][dimension];
-        this.foodMatrix = new Boolean[dimension][dimension];
-        initArrays();
-        Float snakeSize = (float) (this.resolution / dimension);
-        Float ordinate = this.resolution - snakeSize;
-        Coordinate headCoordinate = new Coordinate(snakeSize, ordinate);
 
-        Position headPosition = new Position(0, 1);
-        this.snakeMatrix[headPosition.getRowIndex()][headPosition.getColumnIndex()] = true;
-        SnakePiece snakeHead = new SnakePiece(headCoordinate, headPosition, SnakeDirection.RIGHT);
-        Coordinate tailCoordinate = new Coordinate(headCoordinate.getAbscissa() - snakeSize, ordinate);
-        Position tailPosition = new Position(0, headPosition.getColumnIndex() - 1);
-        this.snakeMatrix[tailPosition.getRowIndex()][tailPosition.getColumnIndex()] = true;
-        SnakePiece snakeTail = new SnakePiece(tailCoordinate, tailPosition, SnakeDirection.RIGHT);
-        this.snake = new Snake(snakeSize, snakeHead, snakeTail);
+        this.snake = initSnake();
         initFood();
+        this.levelIndex = 0;
+        initLevel();
+        this.foodsAmount = 0;
 
         this.snakeRenderer = new ShapeRenderer();
         this.foodRenderer = new ShapeRenderer();
-        this.directionChanges = new LinkedList<>();
+        this.obstaclesRenderer = new ShapeRenderer();
     }
 
-    private void initArrays() {
-        for (Boolean[] matrix : this.snakeMatrix) {
-            Arrays.fill(matrix, false);
+    private Snake initSnake() {
+        Float snakeSize = (float) (this.resolution / DIMENSION);
+        Position initialHeadPosition = getRandomPosition();
+        SnakeDirection initialDirection = getInitialDirection();
+        SnakeHead snakeHead = new SnakeHead(initialHeadPosition, initialDirection);
+        Position bodyInitialPosition = getBodyInitialPosition(snakeHead);
+        LinkedList<Position> body = new LinkedList<>();
+        body.add(bodyInitialPosition);
+        return new Snake(snakeSize, snakeHead, body);
+    }
+
+    private Position getRandomPosition() {
+        Integer row = this.random.nextInt(DIMENSION - 1);
+        Integer column = this.random.nextInt(DIMENSION - 1);
+        return new Position(row, column);
+    }
+
+    private SnakeDirection getInitialDirection() {
+        List<SnakeDirection> snakeDirections = Collections.unmodifiableList(Arrays.asList(SnakeDirection.values()));
+        return snakeDirections.get(this.random.nextInt(snakeDirections.size()));
+    }
+
+    private Position getBodyInitialPosition(SnakeHead snakeHead) {
+        Integer row;
+        Integer column;
+        Position snakeHeadPosition = snakeHead.getPosition();
+        Integer snakeHeadRow = snakeHeadPosition.getRowIndex();
+        Integer snakeHeadColumn = snakeHeadPosition.getColumnIndex();
+        switch (snakeHead.getCurrentDirection()) {
+            case UP:
+                row = snakeHeadRow + 1;
+                column = snakeHeadColumn;
+                break;
+            case DOWN:
+                row = snakeHeadRow - 1;
+                column = snakeHeadColumn;
+                break;
+            case RIGHT:
+                row = snakeHeadRow;
+                column = snakeHeadColumn - 1;
+                break;
+            default: // LEFT
+                row = snakeHeadRow;
+                column = snakeHeadColumn + 1;
         }
-        for (Boolean[] matrix : this.foodMatrix) {
-            Arrays.fill(matrix, false);
-        }
+        return new Position(row, column);
     }
 
     private void initFood() {
-        Random random = new Random();
         boolean hasFood = false;
-        int number = this.foodMatrix.length - 1;
         while (!hasFood) {
-            int row = random.nextInt(number);
-            int column = random.nextInt(number);
-            if (!this.snakeMatrix[row][column]) {
-                this.foodMatrix[row][column] = true;
-                this.foodCoordinate = getCoordinateByRowAndColumn(row, column);
-                hasFood = true;
+            Position position = getRandomPosition();
+            Integer rowPosition = position.getRowIndex();
+            Integer columnPosition = position.getColumnIndex();
+            Position snakeHeadPosition = this.snake.getHead().getPosition();
+            Integer snakeHeadRow = snakeHeadPosition.getRowIndex();
+            Integer snakeHeadColumn = snakeHeadPosition.getColumnIndex();
+            if (!rowPosition.equals(snakeHeadRow) || !columnPosition.equals(snakeHeadColumn)) {
+                boolean isBodyPosition = false;
+                for (Position bodyPosition : this.snake.getBody()) {
+                    if (rowPosition.equals(bodyPosition.getRowIndex()) &&
+                            columnPosition.equals(bodyPosition.getColumnIndex())) {
+                        isBodyPosition = true;
+                        break;
+                    }
+                }
+                if (!isBodyPosition) {
+                    this.food = position;
+                    hasFood = true;
+                }
             }
         }
+    }
+
+    private void initLevel() {
+        List<Obstacle> obstacles = new ArrayList<>();
+        int obstaclesAmount = this.levelIndex * 2;
+        for (int obstacleNumber = 1; obstacleNumber <= obstaclesAmount; obstacleNumber++) {
+            boolean obstacleIsComplete = false;
+            while (!obstacleIsComplete) {
+                Position position = getRandomPosition();
+                if (positionIsOccupied(position)) {
+                    continue;
+                }
+                List<Position> positions = new ArrayList<>();
+                positions.add(position);
+                boolean anyPositionIdOccupied = false;
+                for (int obstaclePiece = 0; obstaclePiece < 4; obstaclePiece++) {
+                    Integer row = positions.get(positions.size() - 1).getRowIndex();
+                    Integer column = positions.get(positions.size() - 1).getColumnIndex();
+                    if (obstacleNumber % 2 == 0) {
+                        column++;
+                    } else {
+                        row--;
+                    }
+                    Position nextPosition = new Position(row, column);
+                    if (positionIsOccupied(nextPosition)) {
+                        anyPositionIdOccupied = true;
+                        break;
+                    }
+                    positions.add(nextPosition);
+                }
+                if (!anyPositionIdOccupied) {
+                    obstacles.add(new Obstacle(positions));
+                    obstacleIsComplete = true;
+                }
+            }
+        }
+        this.currentLevel = new Level(this.levelIndex + 1, FOOD_REQUIRED_AMOUNT, obstacles);
+    }
+
+    private Boolean positionIsOccupied(Position position) {
+        Integer rowIndex = position.getRowIndex();
+        Integer columnIndex = position.getColumnIndex();
+        Position headSnakePosition = this.snake.getHead().getPosition();
+        if (rowIndex.equals(headSnakePosition.getRowIndex()) &&
+                columnIndex.equals(headSnakePosition.getColumnIndex())) {
+            return true;
+        }
+        for (Position bodyPosition : this.snake.getBody()) {
+            if (rowIndex.equals(bodyPosition.getRowIndex()) &&
+                    columnIndex.equals(bodyPosition.getColumnIndex())) {
+                return true;
+            }
+        }
+        return rowIndex.equals(this.food.getRowIndex()) && columnIndex.equals(this.food.getColumnIndex());
     }
 
     private Coordinate getCoordinateByRowAndColumn(Integer row, Integer column) {
@@ -76,100 +173,134 @@ public class StageController {
         return new Coordinate(abscissa, ordinate);
     }
 
-    public void play() throws InterruptedException {
-
-        snakeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        Float snakeSize = this.snake.getSize();
-        snakeRenderer.setColor(0.2f, 0.2f, 0.2f, 1);
-//        Coordinate snakeHeadCoordinate = this.snake.getHead().getCoordinate();
-//        snakeRenderer.rect(snakeHeadCoordinate.getAbscissa(), snakeHeadCoordinate.getOrdinate(), snakeSize, snakeSize);
-//        Coordinate snakeTailCoordinate = this.snake.getTail().getCoordinate();
-//        snakeRenderer.rect(snakeTailCoordinate.getAbscissa(), snakeTailCoordinate.getOrdinate(), snakeSize, snakeSize);
+    public void play() throws InterruptedException, CollisionException {
         drawSnake();
-        snakeRenderer.end();
-
-        foodRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        foodRenderer.setColor(1.0f, 0.2f, 0.2f, 1);
-        foodRenderer.rect(this.foodCoordinate.getAbscissa(), this.foodCoordinate.getOrdinate(), snakeSize, snakeSize);
-        foodRenderer.end();
-
+        drawFood();
+        drawObstacles();
         Thread.sleep(100);
         advanceSnake();
     }
 
     private void drawSnake() {
-        for (int row = 0; row < this.snakeMatrix.length; row++) {
-            for (int column = 0; column < this.snakeMatrix[row].length; column++) {
-                if (this.snakeMatrix[row][column]) {
-                    Coordinate coordinate = getCoordinateByRowAndColumn(row, column);
-                    Float snakeSize = this.snake.getSize();
-                    snakeRenderer.rect(coordinate.getAbscissa(), coordinate.getOrdinate(), snakeSize, snakeSize);
+        snakeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        snakeRenderer.setColor(0.2f, 0.2f, 0.2f, 1);
+        drawSnakeHead();
+        drawSnakeBody();
+        snakeRenderer.end();
+    }
+
+    private void drawSnakeHead() {
+        Position snakeHeadPosition = this.snake.getHead().getPosition();
+        Coordinate coordinate =
+                getCoordinateByRowAndColumn(snakeHeadPosition.getRowIndex(), snakeHeadPosition.getColumnIndex());
+        Float snakeSize = this.snake.getSize();
+        snakeRenderer.rect(coordinate.getAbscissa(), coordinate.getOrdinate(), snakeSize, snakeSize);
+    }
+
+    private void drawSnakeBody() {
+        for (Position bodyPosition : this.snake.getBody()) {
+            Coordinate coordinate =
+                    getCoordinateByRowAndColumn(bodyPosition.getRowIndex(), bodyPosition.getColumnIndex());
+            Float snakeSize = this.snake.getSize();
+            snakeRenderer.rect(coordinate.getAbscissa(), coordinate.getOrdinate(), snakeSize, snakeSize);
+        }
+    }
+
+    private void drawFood() {
+        foodRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        foodRenderer.setColor(1.0f, 0.2f, 0.2f, 1);
+        Coordinate foodCoordinate = getCoordinateByRowAndColumn(this.food.getRowIndex(), this.food.getColumnIndex());
+        Float snakeSize = this.snake.getSize();
+        foodRenderer.rect(foodCoordinate.getAbscissa(), foodCoordinate.getOrdinate(), snakeSize, snakeSize);
+        foodRenderer.end();
+    }
+
+    private void drawObstacles() {
+        obstaclesRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        obstaclesRenderer.setColor(0.2f, 0.5f, 0.2f, 1);
+        for (Obstacle obstacle : this.currentLevel.getObstacles()) {
+            for (Position position : obstacle.getPositions()) {
+                Coordinate coordinate = getCoordinateByRowAndColumn(position.getRowIndex(), position.getColumnIndex());
+                Float snakeSize = this.snake.getSize();
+                obstaclesRenderer.rect(coordinate.getAbscissa(), coordinate.getOrdinate(), snakeSize, snakeSize);
+            }
+        }
+        obstaclesRenderer.end();
+    }
+
+    private void advanceSnake() throws CollisionException {
+        SnakeHead snakeHead = this.snake.getHead();
+        Position snakeHeadCurrentPosition = snakeHead.getPosition();
+        Integer currentHeadRowPosition = snakeHeadCurrentPosition.getRowIndex();
+        Integer currentHeadColumnPosition = snakeHeadCurrentPosition.getColumnIndex();
+        Integer newHeadRowPosition;
+        Integer newHeadColumnPosition;
+        switch (snakeHead.getCurrentDirection()) {
+            case UP:
+                newHeadRowPosition = currentHeadRowPosition - 1;
+                newHeadColumnPosition = currentHeadColumnPosition;
+                break;
+            case DOWN:
+                newHeadRowPosition = currentHeadRowPosition + 1;
+                newHeadColumnPosition = currentHeadColumnPosition;
+                break;
+            case RIGHT:
+                newHeadRowPosition = currentHeadRowPosition;
+                newHeadColumnPosition = currentHeadColumnPosition + 1;
+                break;
+            default: // LEFT
+                newHeadRowPosition = currentHeadRowPosition;
+                newHeadColumnPosition = currentHeadColumnPosition - 1;
+                break;
+        }
+        Position newHeadPosition = new Position(newHeadRowPosition, newHeadColumnPosition);
+        verifyCollision(newHeadPosition);
+        this.snake.getBody().addFirst(snakeHeadCurrentPosition);
+        snakeHead.setPosition(newHeadPosition);
+        verifyFood();
+    }
+
+    private void verifyCollision(Position newHeadPosition) throws CollisionException {
+        Integer newHeadPositionRow = newHeadPosition.getRowIndex();
+        Integer newHeadPositionColumn = newHeadPosition.getColumnIndex();
+        if (newHeadPositionRow < 0 || newHeadPositionRow >= DIMENSION ||
+                newHeadPositionColumn < 0 || newHeadPositionColumn >= DIMENSION) {
+            throw new CollisionException("La serpiente se estrelló contra el muro.");
+        }
+        for (Position bodyPosition : this.snake.getBody()) {
+            if (newHeadPositionRow.equals(bodyPosition.getRowIndex()) &&
+                    newHeadPositionColumn.equals(bodyPosition.getColumnIndex())) {
+                throw new CollisionException("La serpiente se estrelló con su propio cuerpo.");
+            }
+        }
+        for (Obstacle obstacle : this.currentLevel.getObstacles()) {
+            for (Position position : obstacle.getPositions()) {
+                if (newHeadPositionRow.equals(position.getRowIndex()) &&
+                        newHeadPositionColumn.equals(position.getColumnIndex())) {
+                    throw new CollisionException("La serpiente se estrelló contra un obstáculo.");
                 }
             }
         }
     }
 
-    private void advanceSnake() {
-        SnakePiece snakeHead = this.snake.getHead();
-        Coordinate snakeHeadCoordinate = snakeHead.getCoordinate();
-        Position snakeHeadPosition = snakeHead.getPosition();
-        Float snakeSize = this.snake.getSize();
-        switch (snakeHead.getCurrentDirection()) {
-            case UP:
-                snakeHeadCoordinate.setOrdinate(snakeHeadCoordinate.getOrdinate() + snakeSize);
-                snakeHeadPosition.setRowIndex(snakeHeadPosition.getRowIndex() - 1);
-                break;
-            case DOWN:
-                snakeHeadCoordinate.setOrdinate(snakeHeadCoordinate.getOrdinate() - snakeSize);
-                snakeHeadPosition.setRowIndex(snakeHeadPosition.getRowIndex() + 1);
-                break;
-            case LEFT:
-                snakeHeadCoordinate.setAbscissa(snakeHeadCoordinate.getAbscissa() - snakeSize);
-                snakeHeadPosition.setColumnIndex(snakeHeadPosition.getColumnIndex() - 1);
-                break;
-            case RIGHT:
-                snakeHeadCoordinate.setAbscissa(snakeHeadCoordinate.getAbscissa() + snakeSize);
-                snakeHeadPosition.setColumnIndex(snakeHeadPosition.getColumnIndex() + 1);
-                break;
+    private void verifyFood() {
+        Position headPosition = this.snake.getHead().getPosition();
+        if (!headPosition.getRowIndex().equals(this.food.getRowIndex()) ||
+                !headPosition.getColumnIndex().equals(this.food.getColumnIndex())) {
+            this.snake.getBody().removeLast();
+            return;
         }
-        this.snakeMatrix[snakeHeadPosition.getRowIndex()][snakeHeadPosition.getColumnIndex()] = true;
-
-        SnakePiece snakeTail = this.snake.getTail();
-        Coordinate snakeTailCoordinate = snakeTail.getCoordinate();
-        Position snakeTailPosition = snakeTail.getPosition();
-        this.snakeMatrix[snakeTailPosition.getRowIndex()][snakeTailPosition.getColumnIndex()] = false;
-        switch (snakeTail.getCurrentDirection()) {
-            case UP:
-                snakeTailCoordinate.setOrdinate(snakeTailCoordinate.getOrdinate() + snakeSize);
-                snakeTailPosition.setRowIndex(snakeTailPosition.getRowIndex() - 1);
-                break;
-            case DOWN:
-                snakeTailCoordinate.setOrdinate(snakeTailCoordinate.getOrdinate() - snakeSize);
-                snakeTailPosition.setRowIndex(snakeTailPosition.getRowIndex() + 1);
-                break;
-            case LEFT:
-                snakeTailCoordinate.setAbscissa(snakeTailCoordinate.getAbscissa() - snakeSize);
-                snakeTailPosition.setColumnIndex(snakeTailPosition.getColumnIndex() - 1);
-                break;
-            case RIGHT:
-                snakeTailCoordinate.setAbscissa(snakeTailCoordinate.getAbscissa() + snakeSize);
-                snakeTailPosition.setColumnIndex(snakeTailPosition.getColumnIndex() + 1);
-                break;
+        this.foodsAmount++;
+        initFood();
+        if (this.foodsAmount >= this.currentLevel.getFoodRequiredAmount()) {
+            this.levelIndex++;
+            this.foodsAmount = 0;
+            initLevel();
         }
-        if (this.directionChanges.size() > 0) {
-            DirectionChange directionChange = this.directionChanges.getFirst();
-            Position directionChangePosition = directionChange.getPosition();
-            if (snakeTailPosition.getRowIndex().equals(directionChangePosition.getRowIndex()) &&
-                    snakeTailPosition.getColumnIndex().equals(directionChangePosition.getColumnIndex())) {
-                snakeTail.setCurrentDirection(directionChange.getNewDirection());
-                this.directionChanges.removeFirst();
-            }
-        }
-        verifyFood();
     }
 
     public void changeDirection(SnakeDirection newDirection) {
-        SnakePiece head = this.snake.getHead();
+        SnakeHead head = this.snake.getHead();
         SnakeDirection currentDirection = head.getCurrentDirection();
         if ((currentDirection.equals(newDirection)) ||
                 (currentDirection.equals(SnakeDirection.UP) && newDirection.equals(SnakeDirection.DOWN)) ||
@@ -178,43 +309,7 @@ public class StageController {
                 (currentDirection.equals(SnakeDirection.LEFT) && newDirection.equals(SnakeDirection.RIGHT))) {
             return;
         }
-
         head.setCurrentDirection(newDirection);
-        Position headPosition = head.getPosition();
-        this.directionChanges.add(new DirectionChange(
-                newDirection, new Position(headPosition.getRowIndex(), headPosition.getColumnIndex())
-        ));
-    }
-
-    private void verifyFood() {
-        Position headPosition = this.snake.getHead().getPosition();
-        if (this.foodMatrix[headPosition.getRowIndex()][headPosition.getColumnIndex()]) {
-            this.foodMatrix[headPosition.getRowIndex()][headPosition.getColumnIndex()] = false;
-            initFood();
-            SnakePiece tail = this.snake.getTail();
-            Coordinate snakeTailCoordinate = tail.getCoordinate();
-            Position snakeTailPosition = tail.getPosition();
-            Float snakeSize = this.snake.getSize();
-            switch (tail.getCurrentDirection()) {
-                case UP:
-                    snakeTailCoordinate.setOrdinate(snakeTailCoordinate.getOrdinate() - snakeSize);
-                    snakeTailPosition.setRowIndex(snakeTailPosition.getRowIndex() + 1);
-                    break;
-                case DOWN:
-                    snakeTailCoordinate.setOrdinate(snakeTailCoordinate.getOrdinate() + snakeSize);
-                    snakeTailPosition.setRowIndex(snakeTailPosition.getRowIndex() - 1);
-                    break;
-                case LEFT:
-                    snakeTailCoordinate.setAbscissa(snakeTailCoordinate.getAbscissa() + snakeSize);
-                    snakeTailPosition.setColumnIndex(snakeTailPosition.getColumnIndex() + 1);
-                    break;
-                case RIGHT:
-                    snakeTailCoordinate.setAbscissa(snakeTailCoordinate.getAbscissa() - snakeSize);
-                    snakeTailPosition.setColumnIndex(snakeTailPosition.getColumnIndex() - 1);
-                    break;
-            }
-            this.snakeMatrix[snakeTailPosition.getRowIndex()][snakeTailPosition.getColumnIndex()] = true;
-        }
     }
 
 }

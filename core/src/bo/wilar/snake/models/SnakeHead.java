@@ -2,24 +2,14 @@ package bo.wilar.snake.models;
 
 import bo.wilar.snake.enums.SnakeDirection;
 
-public class SnakePiece {
+public class SnakeHead {
 
-    private Coordinate coordinate;
     private Position position;
     private SnakeDirection currentDirection;
 
-    public SnakePiece(Coordinate coordinate, Position position, SnakeDirection currentDirection) {
-        this.coordinate = coordinate;
+    public SnakeHead(Position position, SnakeDirection currentDirection) {
         this.position = position;
         this.currentDirection = currentDirection;
-    }
-
-    public Coordinate getCoordinate() {
-        return coordinate;
-    }
-
-    public void setCoordinate(Coordinate coordinate) {
-        this.coordinate = coordinate;
     }
 
     public Position getPosition() {

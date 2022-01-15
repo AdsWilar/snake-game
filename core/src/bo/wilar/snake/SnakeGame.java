@@ -2,6 +2,7 @@ package bo.wilar.snake;
 
 import bo.wilar.snake.controllers.StageController;
 import bo.wilar.snake.enums.SnakeDirection;
+import bo.wilar.snake.exceptions.CollisionException;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -29,6 +30,9 @@ public class SnakeGame extends ApplicationAdapter {
             stageController.play();
         } catch (InterruptedException e) {
             e.printStackTrace();
+        } catch (CollisionException e) {
+            // DO SOMETHING
+            System.out.println("Game Over");
         }
     }
 
